@@ -1,10 +1,12 @@
-ext/path_string/Makefile
 ext/path_string/path_string_native.c
 ext/path_string/extconf.rb
 lib/path/extra.rb
 lib/path/list.rb
+lib/path-string.rb
 lib/path_string.rb
+lib/path_string/extra.rb
 lib/path_string/version.rb
+lib/path_string/list.rb
 Manifest.txt
 Rakefile
 README.rdoc
