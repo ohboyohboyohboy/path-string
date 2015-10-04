@@ -8,7 +8,7 @@ Fast native-compiled replacement for Pathname
 
 == SYNOPSIS:
 
-  require 'path-string'
+  require 'path_string'
 
   Path.new(".").expand
   Path("~/.config-file").expand
@@ -18,7 +18,7 @@ Fast native-compiled replacement for Pathname
 
 == INSTALL:
 
-  sudo gem install path-string
+  sudo gem install path_string
 
 == LICENSE:
 
