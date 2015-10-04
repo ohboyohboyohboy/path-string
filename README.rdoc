@@ -1,0 +1,24 @@
+path-string
+    by Kyle Yetter <kyle@ohboyohboyohboy.org>
+
+== DESCRIPTION:
+
+Fast native-compiled replacement for Pathname
+
+== SYNOPSIS:
+
+  require 'path-string'
+
+  Path.new(".").expand
+  Path("~/.config-file").expand
+  Path("/some/absolute/path").relative
+  Path.glob("~/*.txt")
+  Path.search('.') { |path| path.file? }
+
+== INSTALL:
+
+  sudo gem install path-string
+
+== LICENSE:
+
+MIT

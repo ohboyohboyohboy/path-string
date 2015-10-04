@@ -1,0 +1,6 @@
+=== 1.1.0 / 2015-10-04
+
+* 1 major enhancement
+
+  * Ported project to use a Hoe build structure
+
