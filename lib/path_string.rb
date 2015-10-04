@@ -6,10 +6,10 @@ $LOAD_PATH.unshift(lib_directory) unless $LOAD_PATH.include?(lib_directory)
 
 if RUBY_PLATFORM =~ /java/i
 else
-  require 'path-string/path_string.so'
+  require 'path_string/path_string_native.so'
 end
 
-require 'path-string/version'
+require 'path_string/version'
 
 class Path < String
   def self.constant_missing( name )
@@ -20,7 +20,7 @@ class Path < String
     end
   end
 
-  autoload :List, 'path/list'
+  autoload :List, 'path_string/list'
 
   # :stopdoc:
   if RUBY_VERSION < "1.9"
@@ -679,9 +679,8 @@ class Path  # iterators
   end
 
   def is_binary_data?
-      ( self.count( "^ -~", "^\r\n" ).fdiv( length ) > 0.3 || index( "\x00" ) ) unless empty?
+    ( self.count( "^ -~", "^\r\n" ).fdiv( length ) > 0.3 || index( "\x00" ) ) unless empty?
   end
-
 end
 
 class String
