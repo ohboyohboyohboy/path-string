@@ -15,6 +15,9 @@ require 'rake/extensiontask'
 
 PROJECT_NAME = 'path-string'
 
+Hoe.plugin :bundler
+Hoe.plugin :gemspec
+
 Hoe.spec PROJECT_NAME do
   developer("Kyle Yetter", "kyle@ohboyohboyohboy.org")
   license "MIT"
@@ -26,6 +29,15 @@ Hoe.spec PROJECT_NAME do
     %w( rake-compiler >=0 ) <<
     %w( rspec ~>2.14 )      <<
     %w( rake ~>10.4 )
+
+  self.spec_extras = {
+    extensions: %w( ext/path_string/extconf.rb ),
+    required_ruby_version: '>= 1.9'
+  }
+
+  self.clean_globs += %w(
+    lib/path_string/*.so
+  )
 
   Rake::ExtensionTask.new('path_string_native', spec) do |ext|
     ext.ext_dir = 'ext/path_string'
