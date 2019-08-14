@@ -45,13 +45,13 @@ Hoe.spec PROJECT_NAME do
   end
 end
 
-#tasks = Rake.application.instance_variable_get( :@tasks )
-#%w( release release_to_gemcutter release_to_rubyforge announce publish_docs ).each do | task_name |
-#  tasks.delete( task_name )
-#end
-#
-#desc "Upload gem to gems.ohboyohboyohboy.org and update the gem index"
-#task :release => [ :package ] do
-#  sh( "scp pkg/*.gem gems@ohboyohboyohboy.org:public_html/gems/" )
-#  sh( "ssh gems@ohboyohboyohboy.org 'cd public_html; gem generate_index;'" )
-#end
+tasks = Rake.application.instance_variable_get( :@tasks )
+%w( release release_to_gemcutter release_to_rubyforge announce publish_docs ).each do | task_name |
+  tasks.delete( task_name )
+end
+
+desc "Upload gem to gems.ohboyohboyohboy.org and update the gem index"
+task :release => [ :package ] do
+  sh( "scp pkg/*.gem gems@ohboyohboyohboy.org:public_html/gems/" )
+  sh( "ssh gems@ohboyohboyohboy.org 'cd public_html; gem generate_index;'" )
+end
