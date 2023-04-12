@@ -9,40 +9,101 @@
 #define unless( expr ) if ( !( expr ) )
 #define until( expr ) while ( !( expr ) )
 #define APPLY_TAINTING(value, reference)
+#define OBJ_TAINT(obj)
+#define  OBJ_TAINTED(obj) (0)
+
+
 #define RUBY_MAX_CHAR_LEN 16
+#define STR_SHARED_ROOT FL_USER5
+#define STR_BORROWED FL_USER6
 #define STR_TMPLOCK FL_USER7
-#define STR_NOEMBED FL_USER1
-#define STR_SHARED  FL_USER2 /* = ELTS_SHARED */
-#define STR_ASSOC   FL_USER3
-#define STR_SHARED_P(s) FL_ALL(s, STR_NOEMBED|ELTS_SHARED)
-#define STR_ASSOC_P(s)  FL_ALL(s, STR_NOEMBED|STR_ASSOC)
-#define STR_NOCAPA  (STR_NOEMBED|ELTS_SHARED|STR_ASSOC)
-#define STR_NOCAPA_P(s) (FL_TEST(s,STR_NOEMBED) && FL_ANY(s,ELTS_SHARED|STR_ASSOC))
-#define STR_UNSET_NOCAPA(s) do {\
-    if (FL_TEST(s,STR_NOEMBED)) FL_UNSET(s,(ELTS_SHARED|STR_ASSOC));\
-} while (0)
+#define STR_NOFREE FL_USER18
+#define STR_FAKESTR FL_USER19
+#define STR_NOEMBED      FL_USER1
+#define STR_SHARED       FL_USER2 /* = ELTS_SHARED */
+#define STR_EMBED_P(str) (!FL_TEST_RAW((str), STR_NOEMBED))
+#define STR_SHARED_P(s)  FL_ALL_RAW((s), STR_NOEMBED|ELTS_SHARED)
 
 
 #define STR_SET_NOEMBED(str) do {\
-    FL_SET(str, STR_NOEMBED);\
-    STR_SET_EMBED_LEN(str, 0);\
+    FL_SET((str), STR_NOEMBED);\
+    FL_UNSET((str), STR_SHARED | STR_SHARED_ROOT | STR_BORROWED);\
 } while (0)
-#define STR_SET_EMBED(str) FL_UNSET(str, STR_NOEMBED)
-#define STR_EMBED_P(str) (!FL_TEST(str, STR_NOEMBED))
-#define STR_SET_EMBED_LEN(str, n) do { \
-    long tmp_n = (n);\
-    RBASIC(str)->flags &= ~RSTRING_EMBED_LEN_MASK;\
-    RBASIC(str)->flags |= (tmp_n) << RSTRING_EMBED_LEN_SHIFT;\
+#define STR_SET_EMBED(str) FL_UNSET((str), (STR_NOEMBED|STR_NOFREE))
+# define STR_SET_EMBED_LEN(str, n) do { \
+    assert(str_embed_capa(str) > (n));\
+    RSTRING(str)->as.embed.len = (n);\
 } while (0)
 
 #define STR_SET_LEN(str, n) do { \
     if (STR_EMBED_P(str)) {\
-    STR_SET_EMBED_LEN(str, n);\
+        STR_SET_EMBED_LEN((str), (n));\
     }\
     else {\
-    RSTRING(str)->as.heap.len = (n);\
+        RSTRING(str)->as.heap.len = (n);\
     }\
 } while (0)
+
+#define STR_DEC_LEN(str) do {\
+    if (STR_EMBED_P(str)) {\
+        long n = RSTRING_LEN(str);\
+        n--;\
+        STR_SET_EMBED_LEN((str), n);\
+    }\
+    else {\
+        RSTRING(str)->as.heap.len--;\
+    }\
+} while (0)
+#define TERM_LEN(str) (str_enc_fastpath(str) ? 1 : rb_enc_mbminlen(rb_enc_from_index(ENCODING_GET(str))))
+#define TERM_FILL(ptr, termlen) do {\
+    char *const term_fill_ptr = (ptr);\
+    const int term_fill_len = (termlen);\
+    *term_fill_ptr = '\0';\
+    if (UNLIKELY(term_fill_len > 1))\
+        memset(term_fill_ptr, 0, term_fill_len);\
+} while (0)
+
+#define RESIZE_CAPA(str,capacity) do {\
+    const int termlen = TERM_LEN(str);\
+    RESIZE_CAPA_TERM(str,capacity,termlen);\
+} while (0)
+#define RESIZE_CAPA_TERM(str,capacity,termlen) do {\
+    if (STR_EMBED_P(str)) {\
+        if (str_embed_capa(str) < capacity + termlen) {\
+            char *const tmp = ALLOC_N(char, (size_t)(capacity) + (termlen));\
+            const long tlen = RSTRING_LEN(str);\
+            memcpy(tmp, RSTRING_PTR(str), tlen);\
+            RSTRING(str)->as.heap.ptr = tmp;\
+            RSTRING(str)->as.heap.len = tlen;\
+            STR_SET_NOEMBED(str);\
+            RSTRING(str)->as.heap.aux.capa = (capacity);\
+        }\
+    }\
+    else {\
+        assert(!FL_TEST((str), STR_SHARED)); \
+        SIZED_REALLOC_N(RSTRING(str)->as.heap.ptr, char, \
+                        (size_t)(capacity) + (termlen), STR_HEAP_SIZE(str)); \
+        RSTRING(str)->as.heap.aux.capa = (capacity);\
+    }\
+} while (0)
+
+#define STR_SET_SHARED(str, shared_str) do { \
+    if (!FL_TEST(str, STR_FAKESTR)) { \
+        assert(RSTRING_PTR(shared_str) <= RSTRING_PTR(str)); \
+        assert(RSTRING_PTR(str) <= RSTRING_PTR(shared_str) + RSTRING_LEN(shared_str)); \
+        RB_OBJ_WRITE((str), &RSTRING(str)->as.heap.aux.shared, (shared_str)); \
+        FL_SET((str), STR_SHARED); \
+        FL_SET((shared_str), STR_SHARED_ROOT); \
+        if (RBASIC_CLASS((shared_str)) == 0) /* for CoW-friendliness */ \
+            FL_SET_RAW((shared_str), STR_BORROWED); \
+    } \
+} while (0)
+
+#define STR_HEAP_PTR(str)  (RSTRING(str)->as.heap.ptr)
+#define STR_HEAP_SIZE(str) ((size_t)RSTRING(str)->as.heap.aux.capa + TERM_LEN(str))
+/* TODO: include the terminator size in capa. */
+
+#define STR_ENC_GET(str) get_encoding(str)
 
 #if defined __CYGWIN__ || defined DOSISH
 #define DOSISH_UNC
@@ -302,29 +363,12 @@ path_alloc( VALUE klass )
 }
 
 static VALUE
-path_new( VALUE klass, char *ptr, long len )
+path_new(VALUE klass, const char *ptr, long len)
 {
     VALUE path;
 
-    if ( len < 0 ) {
-        rb_raise( rb_eArgError, "negative string size (or size too big)" );
-    }
-    path = path_alloc( klass );
-
-    if (len > RSTRING_EMBED_LEN_MAX) {
-        RSTRING( path )->as.heap.aux.capa = len;
-        RSTRING( path )->as.heap.ptr = ALLOC_N( char, len + 1 );
-        STR_SET_NOEMBED( path );
-    }
-    else if ( len == 0 ) {
-          ENC_CODERANGE_SET( path, ENC_CODERANGE_7BIT );
-    }
-    if ( ptr ) {
-          memcpy( RSTRING_PTR( path ), ptr, len );
-    }
-    STR_SET_LEN( path, len );
-    RSTRING_PTR( path )[len] = '\0';
-
+    path = rb_str_new(ptr, len);
+    OBJSETUP(path, klass, T_STRING);
     return path;
 }
 

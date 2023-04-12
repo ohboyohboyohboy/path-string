@@ -49,9 +49,6 @@ describe( Path ) do
     it "provides you with the individual segments of the path" do
       Path( "/a/b/c" ).segments.should     == %w( / a b c )
       Path( ".//x/y.txt" ).segments.should == %w( . x y.txt )
-
-      Path( "/a/b/c".taint ).segments.should be_tainted
-      Path( "/a/b/c".taint ).segments.all? { | i | i.tainted? }.should be_true
     end
 
     it "aliases the unary + operator to provide base name" do
@@ -84,7 +81,6 @@ describe( Path ) do
         cleaned_path = dirty.clean
         cleaned_path.should == clean
         cleaned_path.should_not be( dirty ) # different object identity
-        dirty.taint.clean.should be_tainted
       end
     end
 
