@@ -8,7 +8,7 @@
 
 #define unless( expr ) if ( !( expr ) )
 #define until( expr ) while ( !( expr ) )
-
+#define APPLY_TAINTING(value, reference)
 #define RUBY_MAX_CHAR_LEN 16
 #define STR_TMPLOCK FL_USER7
 #define STR_NOEMBED FL_USER1
@@ -80,10 +80,14 @@
 
 #define DERIVE_PATH( var, cstr, len ) do {\
         var = rb_str_new5( self, cstr, len );\
-        OBJ_INFECT( var, self );\
+        APPLY_TAINTING( var, self );\
       } while ( 0 );
 
 #define lesser(a,b) (((a)>(b))?(b):(a))
+
+#ifndef my_getcwd
+#define my_getcwd() ruby_getcwd()
+#endif
 
 VALUE rb_cPath;
 
@@ -486,8 +490,8 @@ static VALUE rb_path_expand( int argc, VALUE *argv, VALUE self )
 
     expanded_as_path_object = rb_str_new_with_class( self, RSTRING_PTR( expanded ), RSTRING_LEN( expanded ) );
 
-    OBJ_INFECT( expanded_as_path_object, self );
-    OBJ_INFECT( expanded_as_path_object, reference_path );
+    APPLY_TAINTING( expanded_as_path_object, self );
+    APPLY_TAINTING( expanded_as_path_object, reference_path );
 
     return expanded_as_path_object;
 }
@@ -694,7 +698,7 @@ static VALUE rb_path_clean(VALUE self) {
     }
 
     result = rb_str_new_with_class(self, RSTRING_PTR(result_buffer), RSTRING_LEN(result_buffer) );
-    OBJ_INFECT( result, self );
+    APPLY_TAINTING( result, self );
     return (result);
 }
 
@@ -740,7 +744,7 @@ static VALUE rb_path_join_bang( int argc, VALUE *argv, VALUE self )
 static VALUE rb_path_join( int argc, VALUE *argv, VALUE self )
 {
     VALUE path_copy = rb_str_dup( self );
-    OBJ_INFECT( path_copy, self );
+    APPLY_TAINTING( path_copy, self );
 
     return rb_path_join_bang( argc, argv, path_copy );
 }
@@ -766,7 +770,7 @@ static VALUE rb_path_where_p(VALUE self, VALUE _lib_name) {
     if ( RTEST( match ) ) {
         VALUE result;
         result = path_new( self, RSTRING_PTR( match ), RSTRING_LEN( match ) );
-        OBJ_INFECT( result, match );
+        APPLY_TAINTING( result, match );
         return (result);
     }
     return (match);
@@ -858,13 +862,13 @@ static VALUE rb_path_extension(VALUE self) {
         extension = rb_str_new( 0, 0 );
     }
 
-    OBJ_INFECT( extension, self );
+    APPLY_TAINTING( extension, self );
     return (extension);
 }
 
 #define ADD_SEG( ptr, len ) do { \
   VALUE path_seg = rb_str_new5( self, ( ptr ), ( len ) );\
-  OBJ_INFECT( path_seg, self );\
+  APPLY_TAINTING( path_seg, self );\
   rb_ary_push( segment_list, path_seg );\
 } while ( 0 )
 
@@ -906,7 +910,7 @@ static VALUE rb_path_segments( VALUE self ) {
         ADD_SEG( ".", 1 );
     }
 
-    OBJ_INFECT( segment_list, self );
+    APPLY_TAINTING( segment_list, self );
     return segment_list;
 }
 
