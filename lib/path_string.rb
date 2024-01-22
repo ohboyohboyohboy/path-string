@@ -460,7 +460,7 @@ class Path
 
   def glob( *args )
     args  = [ args ].flatten!
-    flags = Fixnum === args.last ? args.pop : 0
+    flags = Integer === args.last ? args.pop : 0
 
     pattern = ( args.empty? ? self : join( *args ) ).expand_tilde
 

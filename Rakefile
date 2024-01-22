@@ -17,6 +17,8 @@ PROJECT_NAME = 'path-string'
 
 Hoe.plugin :bundler
 Hoe.plugin :gemspec
+Hoe.plugin :version
+Hoe.plugins.delete(:test)
 
 Hoe.spec PROJECT_NAME do
   developer("Kyle Yetter", "kyle@ohboyohboyohboy.org")
@@ -36,6 +38,8 @@ Hoe.spec PROJECT_NAME do
   }
 
   self.clean_globs += %w(
+    ext/path_string/*.{o,so}
+    ext/path_string/Makefile
     lib/path_string/*.so
   )
 
@@ -45,13 +49,3 @@ Hoe.spec PROJECT_NAME do
   end
 end
 
-tasks = Rake.application.instance_variable_get( :@tasks )
-%w( release release_to_gemcutter release_to_rubyforge announce publish_docs ).each do | task_name |
-  tasks.delete( task_name )
-end
-
-desc "Upload gem to gems.ohboyohboyohboy.org and update the gem index"
-task :release => [ :package ] do
-  sh( "scp pkg/*.gem gems@ohboyohboyohboy.org:public_html/gems/" )
-  sh( "ssh gems@ohboyohboyohboy.org 'cd public_html; gem generate_index;'" )
-end
