@@ -33,7 +33,7 @@
 # define STR_SET_EMBED_LEN(str, n) do { \
     assert(str_embed_capa(str) > (n));\
     RSTRING(str)->as.embed.len = (n);\
-} while (0)
+} while (0)f
 
 #define STR_SET_LEN(str, n) do { \
     if (STR_EMBED_P(str)) {\
@@ -349,6 +349,7 @@ int l1;
 }
 
 
+/*
 static VALUE
 path_alloc( VALUE klass )
 {
@@ -361,6 +362,7 @@ path_alloc( VALUE klass )
 
     return (VALUE) path;
 }
+*/
 
 static VALUE
 path_new(VALUE klass, const char *ptr, long len)
